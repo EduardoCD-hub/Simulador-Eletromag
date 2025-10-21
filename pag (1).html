@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulações de Eletromagnetismo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* --- ESTILOS GERAIS DAS ABAS --- */
+        body {
+            background-color: #020617; /* Cor de fundo geral */
+        }
+        .tab-content {
+            display: none; /* Esconde todas as abas por padrão */
+        }
+        .tab-content.active {
+            display: block; /* Mostra apenas a aba ativa */
+        }
+        .tab-button.active {
+            border-color: #3b82f6; /* Cor da borda da aba ativa */
+            color: #60a5fa; 
+            background-color: #1e293b; 
+        }
+
+        /* --- ESTILOS ISOLADOS PARA A ABA 1: Cargas --- */
+        #cargas-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #60a5fa; cursor: pointer; border-radius: 50%; border: 2px solid white; }
+        #cargas-container input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #60a5fa; cursor: pointer; border-radius: 50%; border: 2px solid white; }
+        #cargas-container .speech-bubble { position: relative; background: #1e293b; border-radius: .8em; padding: 12px 18px; color: white; }
+        #cargas-container .speech-bubble:after { content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 0; border: 15px solid transparent; border-right-color: #1e293b; border-left: 0; margin-top: -15px; margin-left: -15px; }
+        #cargas-container .formula { font-family: 'Times New Roman', serif; font-style: italic; font-size: 1.1em; }
+        #cargas-container .var-explanation { border-left: 2px solid #fbbf24; padding-left: 8px; margin-top: 4px; }
+
+        /* --- ESTILOS ISOLADOS PARA A ABA 2: Equipotenciais --- */
+        #equipotenciais-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #60a5fa; cursor: pointer; border-radius: 50%; border: 2px solid white; }
+        #equipotenciais-container input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #60a5fa; cursor: pointer; border-radius: 50%; border: 2px solid white; }
+        #equipotenciais-container .explanation-step { display: flex; align-items: flex-start; gap: 1rem; opacity: 0.4; transform: scale(0.98); transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; }
+        #equipotenciais-container .explanation-step.active { opacity: 1; transform: scale(1); }
+        #equipotenciais-container .step-number-container { position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; }
+        #equipotenciais-container .step-number { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #334155; color: white; font-weight: bold; font-size: 1.125rem; border-radius: 9999px; border: 2px solid #475569; transition: all 0.5s ease-in-out; z-index: 1; }
+        #equipotenciais-container .explanation-step.active .step-number { background-color: #3b82f6; border-color: #93c5fd; box-shadow: 0 0 15px rgba(96, 165, 250, 0.5); }
+        #equipotenciais-container .step-number-container::after { content: ''; position: absolute; top: 2.5rem; left: 50%; transform: translateX(-50%); width: 3px; height: 3rem; background-image: linear-gradient(to bottom, #475569, #334155); transition: background-image 0.5s ease-in-out; z-index: 0; }
+        #equipotenciais-container .explanation-step.active .step-number-container::after { background-image: linear-gradient(to bottom, #3b82f6, #60a5fa, #334155); }
+        #equipotenciais-container .explanation-step:last-of-type .step-number-container::after { display: none; }
+        #equipotenciais-container .speech-bubble { position: relative; background-color: #1e293b; border: 1px solid #334155; border-radius: 0.8em; padding: 12px 18px; color: white; flex-grow: 1; transition: all 0.5s ease-in-out; }
+        #equipotenciais-container .explanation-step.active .speech-bubble { background-color: #293548; border-color: #60a5fa; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
+        #equipotenciais-container .speech-bubble:after { content: ''; position: absolute; left: 0; top: 18px; width: 0; height: 0; border: 12px solid transparent; border-right-color: #334155; border-left: 0; margin-top: -12px; margin-left: -12px; transition: border-right-color 0.5s ease-in-out; }
+        #equipotenciais-container .explanation-step.active .speech-bubble:after { border-right-color: #60a5fa; }
+        
+        /* --- ESTILOS ISOLADOS PARA A ABA 3: Magnetico (NOVO CÓDIGO) --- */
+        #magnetico-container * { box-sizing: border-box; }
+        #magnetico-container .container { max-width: 1400px; margin: 0 auto; }
+        #magnetico-container h1 { text-align: center; margin-bottom: 20px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        #magnetico-container .main-content { display: flex; gap: 20px; margin-bottom: 20px; }
+        #magnetico-container .canvas-section { flex: 2; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; backdrop-filter: blur(10px); }
+        #magnetico-container canvas { display: block; width: 100%; background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        #magnetico-container .controls { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        #magnetico-container .control-group { display: flex; flex-direction: column; gap: 5px; }
+        #magnetico-container .control-group label { font-size: 0.9em; font-weight: 600; color: #fff; }
+        #magnetico-container input[type="range"] { width: 150px; cursor: pointer; }
+        #magnetico-container button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-size: 0.9em; }
+        #magnetico-container .mode-btn { background: #4CAF50; color: white; }
+        #magnetico-container .mode-btn:hover { background: #45a049; transform: translateY(-2px); }
+        #magnetico-container .mode-btn.active { background: #2196F3; }
+        #magnetico-container .toggle-btn { background: #ff9800; color: white; }
+        #magnetico-container .toggle-btn:hover { background: #e68900; }
+        #magnetico-container .toggle-btn.active { background: #f44336; }
+        #magnetico-container .sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        #magnetico-container .avatar-section { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; backdrop-filter: blur(10px); }
+        #magnetico-container .avatar-container { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        #magnetico-container .avatar { width: 80px; height: 80px; position: relative; }
+        #magnetico-container .avatar-circle { width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #magnetico-container .avatar-mouth { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 30px; height: 15px; background: #333; border-radius: 0 0 15px 15px; transition: height 0.1s; }
+        #magnetico-container .avatar-mouth.talking { height: 20px; }
+        #magnetico-container .avatar-info h3 { margin-bottom: 5px; font-size: 1.2em; color: #fff; }
+        #magnetico-container .avatar-info p { font-size: 0.9em; opacity: 0.9; color: #fff; }
+        #magnetico-container .voice-control { display: flex; gap: 10px; }
+        #magnetico-container .voice-btn { flex: 1; background: #9c27b0; color: white; }
+        #magnetico-container .voice-btn:hover { background: #7b1fa2; }
+        #magnetico-container .flowchart { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; backdrop-filter: blur(10px); max-height: 500px; overflow-y: auto; }
+        #magnetico-container .flowchart h3 { margin-bottom: 15px; font-size: 1.3em; text-align: center; color: #fff; }
+        #magnetico-container .step { background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #4CAF50; transition: all 0.3s; cursor: pointer; }
+        #magnetico-container .step.active { background: rgba(76, 175, 80, 0.3); border-left-color: #fff; transform: scale(1.02); }
+        #magnetico-container .step h4 { margin-bottom: 8px; color: #4CAF50; font-size: 1.1em; }
+        #magnetico-container .step.active h4 { color: #fff; }
+        #magnetico-container .step p { font-size: 0.9em; line-height: 1.6; margin-bottom: 8px; color: #fff; }
+        #magnetico-container .equation { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; text-align: center; margin: 10px 0; font-size: 1.1em; color: #fff;}
+        #magnetico-container .step-nav { display: flex; gap: 10px; margin-top: 15px; }
+        #magnetico-container .nav-btn { flex: 1; background: #2196F3; color: white; padding: 8px; font-size: 0.85em; }
+        #magnetico-container .nav-btn:hover { background: #1976D2; }
+        @media (max-width: 1024px) { #magnetico-container .main-content { flex-direction: column; } }
+    </style>
+</head>
+<body class="bg-slate-950 font-sans p-4">
+
+    <div class="flex justify-center mb-8 border-b border-slate-700 bg-slate-900 rounded-t-lg">
+        <button class="tab-button active text-lg font-semibold py-4 px-8 border-b-4 transition-all duration-300" onclick="openTab(event, 'cargas')">
+            Cargas Pontuais em Campo Elétrico
+        </button>
+        <button class="tab-button text-lg font-semibold py-4 px-8 border-b-4 border-transparent text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-300" onclick="openTab(event, 'equipotenciais')">
+            Campos Equipotenciais
+        </button>
+        <button class="tab-button text-lg font-semibold py-4 px-8 border-b-4 border-transparent text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-300" onclick="openTab(event, 'magnetico')">
+            Campo Magnético
+        </button>
+    </div>
+
+    <div id="cargas" class="tab-content active">
+        <div id="cargas-container">
+            <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col lg:flex-row items-center justify-center p-6 gap-8">
+                <div class="relative flex flex-col items-center">
+                    <h1 class="text-5xl font-bold text-white mb-6" style="text-shadow: 0 0 15px rgba(147, 197, 253, 0.5);">Simulação Cargas Elétricas</h1>
+                    <canvas id="cargas-simulationCanvas" width="800" height="600" class="rounded-2xl shadow-2xl ring-2 ring-blue-400/30 cursor-grab active:cursor-grabbing"></canvas>
+                    <div class="mt-8 max-w-4xl mx-auto w-full space-y-4 rounded-xl bg-slate-800/80 p-6 backdrop-blur-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between"><label class="text-sm font-semibold text-white">Carga 1</label><span id="cargas-carga1ValorDisplay" class="text-lg font-bold text-white">+50 μC</span></div>
+                                <input type="range" id="cargas-carga1Slider" min="-50" max="50" value="50" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between"><label class="text-sm font-semibold text-white">Carga 2</label><span id="cargas-carga2ValorDisplay" class="text-lg font-bold text-white">-50 μC</span></div>
+                                <input type="range" id="cargas-carga2Slider" min="-50" max="50" value="-50" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div id="cargas-carga3Controls" class="space-y-4 hidden">
+                                <div class="flex items-center justify-between"><label class="text-sm font-semibold text-white">Carga 3</label><span id="cargas-carga3ValorDisplay" class="text-lg font-bold text-white">+25 μC</span></div>
+                                <input type="range" id="cargas-carga3Slider" min="-50" max="50" value="25" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                        <div class="flex justify-center pt-4 border-t border-slate-700/50">
+                            <button id="cargas-addCarga3Btn" class="bg-green-500/20 text-green-300 hover:bg-green-500/30 font-semibold py-2 px-4 rounded-lg transition-all">Adicionar Carga 3</button>
+                            <button id="cargas-removeCarga3Btn" class="bg-red-500/20 text-red-300 hover:bg-red-500/30 font-semibold py-2 px-4 rounded-lg transition-all hidden">Remover Carga 3</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative w-full lg:w-[450px] flex flex-col items-start gap-4 bg-slate-900/50 p-6 rounded-xl shadow-lg ring-1 ring-blue-500/20">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center relative ring-2 ring-white/30 shadow-lg">
+                            <div class="absolute w-12 h-12 bg-white/20 rounded-full -top-1 -left-1"></div>
+                            <div class="flex gap-3 relative"><div class="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-slate-800 rounded-full"></div></div><div class="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-slate-800 rounded-full"></div></div></div>
+                            <div id="cargas-avatarMouth" class="absolute bottom-4 w-5 h-1 bg-slate-800 rounded-full transition-all duration-100"></div>
+                        </div>
+                        <div class="flex flex-col"><h3 class="text-2xl font-bold text-blue-300">Professor Elétron</h3><p class="text-blue-200/80 text-sm">Decifrando a física para você!</p></div>
+                        <button id="cargas-voiceToggle" class="ml-auto w-10 h-10 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-200 hover:bg-blue-500/50 transition-all"><svg id="cargas-voiceIconOn" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg><svg id="cargas-voiceIconOff" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full mt-4">
+                        <div id="cargas-explanationStep1" class="explanation-step flex items-start gap-4 opacity-50 transition-opacity duration-500"><div class="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg ring-2 ring-blue-300/50">1</div><div class="speech-bubble flex-grow"><p class="font-bold text-blue-200">Cargas e Campos</p><p class="text-sm">Cargas elétricas (<span class="text-red-300">+</span> ou <span class="text-blue-300">-</span>) criam um campo elétrico invisível ao seu redor.</p></div></div>
+                        <div class="h-6 flex justify-center"><div class="w-0.5 bg-blue-400/50"></div></div>
+                        <div id="cargas-explanationStep2" class="explanation-step flex items-start gap-4 opacity-50 transition-opacity duration-500"><div class="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg ring-2 ring-blue-300/50">2</div><div class="speech-bubble flex-grow"><p class="font-bold text-blue-200">Atração e Repulsão</p><ul class="text-sm list-disc pl-5"><li><b class="text-green-300">Atração:</b> Sinais opostos (+ e -).</li><li><b class="text-red-300">Repulsão:</b> Sinais iguais (+ e +).</li></ul></div></div>
+                        <div class="h-6 flex justify-center"><div class="w-0.5 bg-blue-400/50"></div></div>
+                        <div id="cargas-explanationStep3" class="explanation-step flex items-start gap-4 opacity-50 transition-opacity duration-500"><div class="flex-shrink-0 w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-slate-800 font-bold text-lg ring-2 ring-yellow-300/50">3</div><div class="speech-bubble flex-grow"><p class="font-bold text-yellow-200">Explicando a Lei de Coulomb</p><div class="text-center mt-2 p-2 bg-slate-900/50 rounded"><p class="formula text-yellow-300">F = k |q₁q₂| / d²</p></div><div class="text-xs text-yellow-200/80 var-explanation"><b class="text-white">F</b> é a Força. <b class="text-white">k</b> é uma constante. <b class="text-white">q₁</b> e <b class="text-white">q₂</b> são as cargas. <b class="text-white">d²</b> é a distância ao quadrado.</div></div></div>
+                        <div class="h-6 flex justify-center"><div class="w-0.5 bg-blue-400/50"></div></div>
+                        <div id="cargas-explanationStep4" class="explanation-step flex items-start gap-4 opacity-50 transition-opacity duration-500"><div class="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg ring-2 ring-blue-300/50">4</div><div class="speech-bubble flex-grow"><p class="font-bold text-blue-200">Linhas de Campo</p><p class="text-sm">As setas mostram a direção da força. Onde as linhas estão mais próximas, o campo é mais <b class="text-white">intenso</b>.</p></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="equipotenciais" class="tab-content">
+        <div id="equipotenciais-container">
+            <div class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex flex-col lg:flex-row items-center justify-center p-6 gap-8">
+                <div class="relative flex flex-col items-center">
+                    <div class="mb-4 flex gap-2 bg-slate-800/80 p-2 rounded-xl">
+                        <button id="equipotenciais-modoCuba" class="px-6 py-3 rounded-lg font-semibold transition-all bg-blue-500 text-white">Cuba Eletrolítica</button>
+                        <button id="equipotenciais-modoDipolo" class="px-6 py-3 rounded-lg font-semibold transition-all bg-slate-700 text-slate-300 hover:bg-slate-600">Dipolo Elétrico</button>
+                    </div>
+                    <h1 id="equipotenciais-titulo" class="text-5xl font-bold text-white mb-6" style="text-shadow: 0 0 15px rgba(147, 197, 253, 0.5);">Cuba Eletrolítica</h1>
+                    <canvas id="equipotenciais-cubaCanvas" width="800" height="600" class="rounded-2xl shadow-2xl ring-2 ring-blue-400/30"></canvas>
+                    <div class="mt-8 max-w-4xl mx-auto w-full space-y-4 rounded-xl bg-slate-800/80 p-6 backdrop-blur-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between"><label id="equipotenciais-label1" class="text-sm font-semibold text-white">Tensão (Voltagem)</label><span id="equipotenciais-voltageDisplay" class="text-lg font-bold text-yellow-300">12.0 V</span></div>
+                                <input type="range" id="equipotenciais-voltageSlider" min="3" max="24" value="12" step="0.5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between"><label id="equipotenciais-label2" class="text-sm font-semibold text-white">Distância entre Eletrodos</label><span id="equipotenciais-distanceDisplay" class="text-lg font-bold text-cyan-300">400 px</span></div>
+                                <input type="range" id="equipotenciais-distanceSlider" min="200" max="600" value="400" step="20" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                        <div class="flex justify-center gap-4 pt-4 border-t border-slate-700/50"><button id="equipotenciais-toggleFieldBtn" class="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 font-semibold py-2 px-4 rounded-lg transition-all">Mostrar Linhas de Campo</button></div>
+                    </div>
+                </div>
+                <div class="relative w-full lg:w-[500px] flex flex-col items-start gap-4 bg-slate-900/50 p-6 rounded-xl shadow-lg ring-1 ring-blue-500/20">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center relative ring-2 ring-white/30 shadow-lg">
+                            <div class="absolute w-12 h-12 bg-white/20 rounded-full -top-1 -left-1"></div>
+                            <div class="flex gap-3 relative"><div class="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-slate-800 rounded-full"></div></div><div class="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-slate-800 rounded-full"></div></div></div>
+                            <div id="equipotenciais-avatarMouth" class="absolute bottom-4 w-5 h-1 bg-slate-800 rounded-full transition-all duration-100"></div>
+                        </div>
+                        <div class="flex flex-col"><h3 class="text-2xl font-bold text-blue-300">Professor Elétron</h3><p class="text-blue-200/80 text-sm">Explicando eletrostática!</p></div>
+                        <button id="equipotenciais-voiceToggle" class="ml-auto w-10 h-10 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-200 hover:bg-blue-500/50 transition-all"><svg id="equipotenciais-voiceIconOn" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg><svg id="equipotenciais-voiceIconOff" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line></svg></button>
+                    </div>
+                    <div id="equipotenciais-flowchartContainer" class="flex flex-col gap-2 w-full mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="magnetico" class="tab-content">
+        <div id="magnetico-container">
+            <div class="container" style="color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <h1>🧲 Simulação de Campo Magnético</h1>
+                <div class="main-content">
+                    <div class="canvas-section">
+                        <canvas id="magnetico-canvas" width="800" height="600"></canvas>
+                        <div class="controls">
+                            <button class="mode-btn active" id="magnetico-mode-magnet">Ímã de Barra</button>
+                            <button class="mode-btn" id="magnetico-mode-wire">Fio com Corrente</button>
+                            <div class="control-group">
+                                <label>Intensidade: <span id="magnetico-strengthValue">5</span></label>
+                                <input type="range" id="magnetico-strength" min="1" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="control-group">
+                                <label>Distância: <span id="magnetico-distanceValue">150</span>px</label>
+                                <input type="range" id="magnetico-distance" min="50" max="250" value="150" step="10">
+                            </div>
+                            <button class="toggle-btn active" id="magnetico-fieldLinesBtn">Linhas de Campo: ON</button>
+                            <button class="toggle-btn" id="magnetico-compassBtn">Bússolas: OFF</button>
+                            <button class="toggle-btn" id="magnetico-filingsBtn">Limalha: OFF</button>
+                        </div>
+                    </div>
+                    <div class="sidebar">
+                        <div class="avatar-section">
+                            <div class="avatar-container">
+                                <div class="avatar">
+                                    <div class="avatar-circle">🧲</div>
+                                    <div class="avatar-mouth" id="magnetico-avatarMouth"></div>
+                                </div>
+                                <div class="avatar-info">
+                                    <h3>Professor Magneto</h3>
+                                    <p>Seu guia no magnetismo!</p>
+                                </div>
+                            </div>
+                            <div class="voice-control">
+                                <button class="voice-btn" id="magnetico-voiceToggle">🔊 Voz: ON</button>
+                                <button class="voice-btn" id="magnetico-repeat">▶️ Repetir</button>
+                            </div>
+                        </div>
+                        <div class="flowchart">
+                            <h3>Fluxograma Educativo</h3>
+                            <div id="magnetico-flowchartSteps"></div>
+                            <div class="step-nav">
+                                <button class="nav-btn" id="magnetico-prevStep">⬅️ Anterior</button>
+                                <button class="nav-btn" id="magnetico-nextStep">Próximo ➡️</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Objeto para gerenciar o estado e a execução de cada simulação
+        const SimManager = {
+            cargas: { initialized: false, animationId: null, intervalId: null, start: () => {} },
+            equipotenciais: { initialized: false, animationId: null, intervalId: null, start: () => {} },
+            magnetico: { initialized: false, animationId: null, intervalId: null, start: () => {} },
+            activeSim: null,
+
+            stopCurrentSim: function() {
+                if (!this.activeSim) return;
+                const sim = this[this.activeSim];
+                if (sim.animationId) { cancelAnimationFrame(sim.animationId); sim.animationId = null; }
+                if (sim.intervalId) { clearInterval(sim.intervalId); sim.intervalId = null; }
+                if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+            }
+        };
+
+        // Função principal para trocar de aba
+        function openTab(event, tabName) {
+            SimManager.stopCurrentSim();
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+            SimManager.activeSim = tabName;
+            
+            if (tabName === 'cargas' && !SimManager.cargas.initialized) initCargasSim();
+            if (tabName === 'equipotenciais' && !SimManager.equipotenciais.initialized) initEquipotenciaisSim();
+            if (tabName === 'magnetico' && !SimManager.magnetico.initialized) initMagneticoSim();
+
+            SimManager[tabName].start();
+        }
+
+        // --- INICIALIZAÇÃO DA SIMULAÇÃO 1: CARGAS PONTUAIS (INALTERADA) ---
+        function initCargasSim() {
+            // (O código completo e funcional desta simulação está aqui, omitido por brevidade)
+            const canvas = document.getElementById('cargas-simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width, height = canvas.height;
+            const carga1Slider = document.getElementById('cargas-carga1Slider');
+            const carga2Slider = document.getElementById('cargas-carga2Slider');
+            const carga3Slider = document.getElementById('cargas-carga3Slider');
+            const carga1ValorDisplay = document.getElementById('cargas-carga1ValorDisplay');
+            const carga2ValorDisplay = document.getElementById('cargas-carga2ValorDisplay');
+            const carga3ValorDisplay = document.getElementById('cargas-carga3ValorDisplay');
+            const carga3Controls = document.getElementById('cargas-carga3Controls');
+            const addCarga3Btn = document.getElementById('cargas-addCarga3Btn');
+            const removeCarga3Btn = document.getElementById('cargas-removeCarga3Btn');
+            const avatarMouth = document.getElementById('cargas-avatarMouth');
+            const voiceToggle = document.getElementById('cargas-voiceToggle');
+            const voiceIconOn = document.getElementById('cargas-voiceIconOn');
+            const voiceIconOff = document.getElementById('cargas-voiceIconOff');
+            let isVoiceEnabled = true;
+            let cargas = [], particulas = [], draggingCarga = null, offsetX, offsetY;
+            const explanations = [ { id: 'cargas-explanationStep1', text: "Olá! Sou o Professor Elétron. Vamos explorar o mundo das cargas elétricas, que criam um campo de força invisível por todo o espaço." }, { id: 'cargas-explanationStep2', text: "A regra principal é simples: cargas com sinais opostos se atraem, enquanto cargas com sinais iguais se repelem. Tente aproximar duas cargas iguais e sinta a repulsão!" }, { id: 'cargas-explanationStep3', text: "A Lei de Coulomb nos diz que a força, F, é proporcional ao produto das cargas, q1 e q2, e inversamente proporcional ao quadrado da distância, d. Mais carga ou menos distância significa muito mais força!" }, { id: 'cargas-explanationStep4', text: "As linhas de campo nos dão um mapa dessa força. As setas indicam a direção, e a densidade das linhas mostra a intensidade. Onde há mais linhas, a força é maior!" }, ];
+            let currentExplanationIndex = 0;
+            function initCargasVars() { cargas = [ { id: 1, x: width * 0.25, y: height / 2, q: parseInt(carga1Slider.value), raio: 30 }, { id: 2, x: width * 0.75, y: height / 2, q: parseInt(carga2Slider.value), raio: 30 } ]; if (carga3Controls.classList.contains('hidden') === false) { cargas.push({ id: 3, x: width / 2, y: height / 2, q: parseInt(carga3Slider.value), raio: 30 }); } atualizarValores(); }
+            function speak(text, isEvent = false) { if (!isVoiceEnabled || !('speechSynthesis' in window) || SimManager.activeSim !== 'cargas') return; window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'pt-BR'; utterance.rate = 1.1; utterance.onstart = () => { avatarMouth.style.height = '12px'; avatarMouth.style.borderRadius = '6px'; }; utterance.onend = () => {  avatarMouth.style.height = '4px';  avatarMouth.style.borderRadius = '9999px'; if(isEvent) { clearInterval(SimManager.cargas.intervalId); SimManager.cargas.intervalId = setInterval(highlightAndSpeak, 10000); } }; window.speechSynthesis.speak(utterance); }
+            function highlightAndSpeak() { document.querySelectorAll('#cargas-container .explanation-step').forEach(el => el.style.opacity = '0.5'); const currentStep = explanations[currentExplanationIndex]; document.getElementById(currentStep.id).style.opacity = '1'; speak(currentStep.text, false); currentExplanationIndex = (currentExplanationIndex + 1) % explanations.length; }
+            function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 7) { const dx = toX - fromX, dy = toY - fromY, angle = Math.atan2(dy, dx); ctx.moveTo(toX, toY); ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6)); ctx.moveTo(toX, toY); ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6)); }
+            function desenharLinhasCampo() { const numLinhas = 22; const raioMinimoSaida = 40; cargas.forEach((carga) => { if (carga.q === 0) return; for (let i = 0; i < numLinhas; i++) { const angulo = (i * 2 * Math.PI) / numLinhas; let x = carga.x + raioMinimoSaida * Math.cos(angulo), y = carga.y + raioMinimoSaida * Math.sin(angulo); ctx.beginPath(); ctx.moveTo(x, y); const passos = 350; const dt = 2.5; let lastX = x, lastY = y; for (let j = 0; j < passos; j++) { const campo = calcularCampo(x, y); const magnitude = Math.sqrt(campo.Ex * campo.Ex + campo.Ey * campo.Ey); if (magnitude < 0.05) break; const direcao = carga.q > 0 ? 1 : -1; const dx = (campo.Ex / magnitude) * dt * direcao, dy = (campo.Ey / magnitude) * dt * direcao; lastX = x; x += dx; y += dy; if (x < -20 || x > width + 20 || y < -20 || y > height + 20) break; let colisao = false; for (const outraCarga of cargas) { if (outraCarga !== carga && Math.sqrt((x - outraCarga.x) ** 2 + (y - outraCarga.y) ** 2) < outraCarga.raio) { colisao = true; break; } } if(colisao) break; ctx.lineTo(x, y); if (j > 0 && j % 40 === 0) drawArrow(ctx, lastX, lastY, x, y); } ctx.strokeStyle = `rgba(255, 255, 255, 0.4)`; ctx.lineWidth = 1; ctx.stroke(); } }); }
+            function calcularCampo(x, y) { let Ex = 0, Ey = 0; const k = 150; cargas.forEach(carga => { const dx = x - carga.x, dy = y - carga.y, r_sq = dx * dx + dy * dy; if (r_sq > 25) { const r = Math.sqrt(r_sq); const E = (carga.q * k) / r_sq; Ex += (E * dx) / r; Ey += (E * dy) / r; } }); return { Ex, Ey }; }
+            function criarParticula() { const cargasPositivas = cargas.filter(c => c.q > 0); if (cargasPositivas.length > 0) { const cargaFonte = cargasPositivas[Math.floor(Math.random() * cargasPositivas.length)]; const angulo = Math.random() * 2 * Math.PI; particulas.push({ x: cargaFonte.x + 35 * Math.cos(angulo), y: cargaFonte.y + 35 * Math.sin(angulo), vida: 1 }); } }
+            function desenharCarga(carga) { ctx.beginPath(); ctx.arc(carga.x, carga.y, carga.raio, 0, 2 * Math.PI); ctx.fillStyle = carga.q > 0 ? "#ef4444" : (carga.q < 0 ? "#3b82f6" : "#64748b"); ctx.fill(); ctx.strokeStyle = carga.q > 0 ? "#fca5a5" : (carga.q < 0 ? "#93c5fd" : "#94a3b8"); ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = "white"; ctx.lineWidth = 4; ctx.beginPath(); if (carga.q < 0) { ctx.moveTo(carga.x - 10, carga.y); ctx.lineTo(carga.x + 10, carga.y); } else if (carga.q > 0) { ctx.moveTo(carga.x - 10, carga.y); ctx.lineTo(carga.x + 10, carga.y); ctx.moveTo(carga.x, carga.y - 10); ctx.lineTo(carga.x, carga.y + 10); } ctx.stroke(); }
+            function animar() { if (SimManager.activeSim !== 'cargas') return;  ctx.fillStyle = "rgba(15, 23, 42, 1)"; ctx.fillRect(0, 0, width, height); desenharLinhasCampo(); if (Math.random() < 0.1) criarParticula(); particulas = particulas.filter(p => { const campo = calcularCampo(p.x, p.y); const mag = Math.sqrt(campo.Ex * campo.Ex + campo.Ey * campo.Ey); if (mag > 0.1) { p.x += (campo.Ex / mag) * 3; p.y += (campo.Ey / mag) * 3; } p.vida -= 0.008; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI); ctx.fillStyle = `rgba(147, 197, 253, ${p.vida})`; ctx.fill(); let colisao = false; for (const carga of cargas) { if (Math.sqrt((p.x - carga.x) ** 2 + (p.y - carga.y) ** 2) < carga.raio) { colisao = true; break; } } return p.vida > 0 && p.x > -10 && p.x < width+10 && p.y > -10 && p.y < height+10 && !colisao; }); cargas.forEach(desenharCarga); SimManager.cargas.animationId = requestAnimationFrame(animar); }
+            function atualizarValores() { cargas.forEach(carga => { if (carga.id === 1) { carga.q = parseInt(carga1Slider.value); carga1ValorDisplay.textContent = `${carga.q >= 0 ? '+' : ''}${carga.q} μC`; } else if (carga.id === 2) { carga.q = parseInt(carga2Slider.value); carga2ValorDisplay.textContent = `${carga.q >= 0 ? '+' : ''}${carga.q} μC`; } else if (carga.id === 3) { carga.q = parseInt(carga3Slider.value); carga3ValorDisplay.textContent = `${carga.q >= 0 ? '+' : ''}${carga.q} μC`; } }); particulas = []; }
+            [carga1Slider, carga2Slider, carga3Slider].forEach(slider => slider.addEventListener('input', atualizarValores));
+            addCarga3Btn.addEventListener('click', () => { if (cargas.find(c => c.id === 3) == null) { cargas.push({ id: 3, x: width / 2, y: height / 2, q: parseInt(carga3Slider.value), raio: 30 }); carga3Controls.classList.remove('hidden'); addCarga3Btn.classList.add('hidden'); removeCarga3Btn.classList.remove('hidden'); atualizarValores(); clearInterval(SimManager.cargas.intervalId); speak("Uma terceira carga foi adicionada! O campo elétrico que você vê é a soma vetorial dos campos de todas as cargas.", true); } });
+            removeCarga3Btn.addEventListener('click', () => { cargas = cargas.filter(c => c.id !== 3); carga3Controls.classList.add('hidden'); addCarga3Btn.classList.remove('hidden'); removeCarga3Btn.classList.add('hidden'); atualizarValores(); clearInterval(SimManager.cargas.intervalId); speak("A terceira carga foi removida. O campo voltou a ser definido apenas pela interação das cargas restantes.", true); });
+            canvas.addEventListener('mousedown', (e) => { const rect = canvas.getBoundingClientRect(), mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top; for (let i = cargas.length - 1; i >= 0; i--) { const carga = cargas[i]; if (Math.sqrt((mouseX - carga.x)**2 + (mouseY - carga.y)**2) < carga.raio) { draggingCarga = carga; break; } } if (draggingCarga) { offsetX = mouseX - draggingCarga.x; offsetY = mouseY - draggingCarga.y; canvas.style.cursor = 'grabbing'; } });
+            canvas.addEventListener('mousemove', (e) => { if (!draggingCarga) return; const rect = canvas.getBoundingClientRect(); let mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top; let newX = mouseX - offsetX, newY = mouseY - offsetY; cargas.forEach(outraCarga => { if (outraCarga.id === draggingCarga.id) return; if (draggingCarga.q * outraCarga.q > 0) { const dx = newX - outraCarga.x, dy = newY - outraCarga.y; const distance = Math.sqrt(dx * dx + dy * dy); const minDistance = draggingCarga.raio + outraCarga.raio + 15; if (distance < minDistance) { const overlap = minDistance - distance; newX += (dx / distance) * overlap; newY += (dy / distance) * overlap; } } }); draggingCarga.x = Math.max(draggingCarga.raio, Math.min(width - draggingCarga.raio, newX)); draggingCarga.y = Math.max(draggingCarga.raio, Math.min(height - draggingCarga.raio, newY)); atualizarValores(); });
+            const stopDragging = () => { draggingCarga = null; canvas.style.cursor = 'grab'; };
+            canvas.addEventListener('mouseup', stopDragging); canvas.addEventListener('mouseleave', stopDragging);
+            voiceToggle.addEventListener('click', () => { isVoiceEnabled = !isVoiceEnabled; voiceIconOn.classList.toggle('hidden'); voiceIconOff.classList.toggle('hidden'); if (!isVoiceEnabled) { window.speechSynthesis.cancel(); } else { currentExplanationIndex = (currentExplanationIndex + explanations.length - 1) % explanations.length; highlightAndSpeak(); } });
+            SimManager.cargas.start = () => { if (SimManager.cargas.animationId) return; initCargasVars(); animar(); setTimeout(() => { highlightAndSpeak(); SimManager.cargas.intervalId = setInterval(highlightAndSpeak, 10000); }, 1000); };
+            SimManager.cargas.initialized = true;
+        }
+
+        // --- INICIALIZAÇÃO DA SIMULAÇÃO 2: CAMPOS EQUIPOTENCIAIS (INALTERADA) ---
+        function initEquipotenciaisSim() {
+            // (O código completo e funcional desta simulação está aqui, omitido por brevidade)
+            const canvas = document.getElementById('equipotenciais-cubaCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width, height = canvas.height;
+            const voltageSlider = document.getElementById('equipotenciais-voltageSlider');
+            const distanceSlider = document.getElementById('equipotenciais-distanceSlider');
+            const voltageDisplay = document.getElementById('equipotenciais-voltageDisplay');
+            const distanceDisplay = document.getElementById('equipotenciais-distanceDisplay');
+            const toggleFieldBtn = document.getElementById('equipotenciais-toggleFieldBtn');
+            const modoCuba = document.getElementById('equipotenciais-modoCuba');
+            const modoDipolo = document.getElementById('equipotenciais-modoDipolo');
+            const titulo = document.getElementById('equipotenciais-titulo');
+            const label1 = document.getElementById('equipotenciais-label1');
+            const label2 = document.getElementById('equipotenciais-label2');
+            const avatarMouth = document.getElementById('equipotenciais-avatarMouth');
+            const voiceToggle = document.getElementById('equipotenciais-voiceToggle');
+            const voiceIconOn = document.getElementById('equipotenciais-voiceIconOn');
+            const voiceIconOff = document.getElementById('equipotenciais-voiceIconOff');
+            const flowchartContainer = document.getElementById('equipotenciais-flowchartContainer');
+            let voltage, distance, showFieldLines = false, modo = 'cuba', isVoiceEnabled = true, currentExplanationIndex = 0;
+            const flowchartsCuba = [ { id: 'cubaStep1', title: 'O que são Linhas Equipotenciais?', content: 'Linhas equipotenciais conectam pontos com o mesmo potencial elétrico (V). Nenhum trabalho é realizado ao mover uma carga ao longo delas, pois ΔV = 0. Equação: V = constante', speech: 'Linhas equipotenciais conectam pontos com a mesma voltagem. Se você mover uma carga ao longo delas, não gasta energia, pois o potencial não muda.' }, { id: 'cubaStep2', title: 'Campo Elétrico Uniforme', content: 'Entre placas paralelas, o campo é uniforme: E = V/d (V/m). As linhas equipotenciais são paralelas aos eletrodos e perpendiculares ao campo. Quanto menor d ou maior V, mais intenso é E.', speech: 'O campo elétrico é calculado dividindo a tensão pela distância. Entre placas paralelas, ele é uniforme e as equipotenciais são linhas retas paralelas.' }, { id: 'cubaStep3', title: 'Propriedades das Equipotenciais', content: 'Propriedades: (1) Sempre perpendiculares às linhas de campo E. (2) Nunca se cruzam. (3) Mais próximas onde E é mais intenso. (4) Superfícies condutoras são equipotenciais.', speech: 'As equipotenciais têm propriedades importantes: são sempre perpendiculares ao campo, nunca se cruzam, e ficam mais próximas onde o campo é mais forte.' }, { id: 'cubaStep4', title: 'Trabalho e Energia', content: 'O trabalho para mover uma carga q entre dois pontos é W = q·ΔV. Entre equipotenciais adjacentes, ΔV é constante. A força sobre a carga é F = q·E, sempre perpendicular às equipotenciais.', speech: 'Para mover uma carga entre duas equipotenciais, você precisa fazer trabalho. A força elétrica sempre aponta perpendicular às linhas equipotenciais.' }, { id: 'cubaStep5', title: 'Aplicação na Eletrólise', content: 'Na cuba eletrolítica, íons migram seguindo o campo E (perpendicular às equipotenciais). A diferença de potencial ΔV fornece energia para as reações redox nos eletrodos.', speech: 'Na eletrólise, os íons se movem seguindo o campo elétrico, perpendicular às equipotenciais. A voltagem aplicada fornece energia para as reações químicas.' } ];
+            const flowchartsDipolo = [ { id: 'dipoloStep1', title: 'Potencial do Dipolo', content: 'O potencial em um ponto é V = k(Q/r₁ - Q/r₂), onde r₁ e r₂ são as distâncias até cada carga. Linhas equipotenciais conectam pontos onde V é constante.', speech: 'No dipolo, o potencial em cada ponto depende da distância até ambas as cargas. As equipotenciais conectam pontos com o mesmo valor de potencial.' }, { id: 'dipoloStep2', title: 'Geometria das Equipotenciais', content: 'As equipotenciais do dipolo são curvas fechadas que envolvem as cargas. Perto das cargas, são quase circulares. Longe, tornam-se mais alongadas. Equação: V(r,θ) = k·p·cosθ/r² (campo distante)', speech: 'As equipotenciais do dipolo formam curvas fechadas. Perto das cargas são quase círculos, mas longe ficam mais alongadas na direção perpendicular ao dipolo.' }, { id: 'dipoloStep3', title: 'Campo Elétrico do Dipolo', content: 'O campo E é sempre perpendicular às equipotenciais. Sua intensidade é E = -∇V. No eixo do dipolo: E = 2kp/r³. No plano equatorial: E = kp/r³.', speech: 'O campo elétrico do dipolo aponta sempre perpendicular às equipotenciais. Ele é mais forte no eixo do dipolo e mais fraco no plano equatorial.' }, { id: 'dipoloStep4', title: 'Plano Equipotencial Zero', content: 'O plano perpendicular ao dipolo que passa pelo centro é uma equipotencial especial onde V = 0. Isso ocorre porque r₁ = r₂, então Q/r₁ - Q/r₂ = 0.', speech: 'Existe um plano especial no meio do dipolo onde o potencial é exatamente zero. Isso acontece porque as contribuições das duas cargas se cancelam.' }, { id: 'dipoloStep5', title: 'Momento de Dipolo', content: 'O momento de dipolo p = Q·d (C·m) caracteriza a intensidade do dipolo. Quanto maior p, mais intenso o campo e mais espaçadas as equipotenciais. Energia em campo externo: U = -p·E·cosθ', speech: 'O momento de dipolo mede a força do dipolo. Quanto maior ele for, mais intenso é o campo elétrico e mais espaçadas ficam as linhas equipotenciais.' } ];
+            let currentFlowcharts = flowchartsCuba;
+            function renderFlowcharts() { flowchartContainer.innerHTML = ''; currentFlowcharts.forEach((step, index) => { const stepDiv = document.createElement('div'); stepDiv.className = 'explanation-step'; stepDiv.id = `equipotenciais-${step.id}`; stepDiv.innerHTML = `<div class="step-number-container"><div class="step-number">${index + 1}</div></div><div class="speech-bubble"><p class="font-bold text-blue-200">${step.title}</p><p class="text-sm mt-1 text-slate-300">${step.content}</p></div>`; flowchartContainer.appendChild(stepDiv); }); }
+            function speak(text) { if (!isVoiceEnabled || !('speechSynthesis' in window) || SimManager.activeSim !== 'equipotenciais') return; window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'pt-BR'; utterance.rate = 1.0; utterance.onstart = () => { avatarMouth.style.height = '12px'; avatarMouth.style.borderRadius = '6px'; }; utterance.onend = () => { avatarMouth.style.height = '4px'; avatarMouth.style.borderRadius = '9999px'; }; window.speechSynthesis.speak(utterance); }
+            function highlightAndSpeak() { const previousActive = flowchartContainer.querySelector('.explanation-step.active'); if (previousActive) { previousActive.classList.remove('active'); } const currentStepData = currentFlowcharts[currentExplanationIndex]; const currentStepElement = document.getElementById(`equipotenciais-${currentStepData.id}`); if (currentStepElement) { currentStepElement.classList.add('active'); speak(currentStepData.speech); } currentExplanationIndex = (currentExplanationIndex + 1) % currentFlowcharts.length; }
+            voiceToggle.addEventListener('click', () => { isVoiceEnabled = !isVoiceEnabled; voiceIconOn.classList.toggle('hidden'); voiceIconOff.classList.toggle('hidden'); if (!isVoiceEnabled) { window.speechSynthesis.cancel(); } else { currentExplanationIndex = (currentExplanationIndex + currentFlowcharts.length - 1) % currentFlowcharts.length; highlightAndSpeak(); } });
+            const eletrodoLargura = 30, eletrodoAltura = 400;
+            function getAnodoX() { return (width - distance) / 2; }
+            function getCatodoX() { return (width + distance) / 2; }
+            function desenharEletrodos() { const anodoX = getAnodoX(); const catodoX = getCatodoX(); const eletrodoY = (height - eletrodoAltura) / 2; ctx.fillStyle = '#ef4444'; ctx.fillRect(anodoX, eletrodoY, eletrodoLargura, eletrodoAltura); ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 3; ctx.strokeRect(anodoX, eletrodoY, eletrodoLargura, eletrodoAltura); ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(anodoX + eletrodoLargura/2 - 8, eletrodoY - 30); ctx.lineTo(anodoX + eletrodoLargura/2 + 8, eletrodoY - 30); ctx.moveTo(anodoX + eletrodoLargura/2, eletrodoY - 38); ctx.lineTo(anodoX + eletrodoLargura/2, eletrodoY - 22); ctx.stroke(); ctx.fillStyle = '#3b82f6'; ctx.fillRect(catodoX - eletrodoLargura, eletrodoY, eletrodoLargura, eletrodoAltura); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 3; ctx.strokeRect(catodoX - eletrodoLargura, eletrodoY, eletrodoLargura, eletrodoAltura); ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(catodoX - eletrodoLargura/2 - 8, eletrodoY - 30); ctx.lineTo(catodoX - eletrodoLargura/2 + 8, eletrodoY - 30); ctx.stroke(); ctx.fillStyle = 'white'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ÂNODO (+)', anodoX + eletrodoLargura/2, eletrodoY + eletrodoAltura + 30); ctx.fillText('CÁTODO (-)', catodoX - eletrodoLargura/2, eletrodoY + eletrodoAltura + 30); }
+            function desenharEquipotenciais() { const anodoX = getAnodoX(); const catodoX = getCatodoX(); const eletrodoY = (height - eletrodoAltura) / 2; const minLinhas = 4; const maxLinhas = 12; const rangeDistancia = distanceSlider.max - distanceSlider.min; const numLinhas = Math.floor(minLinhas + (maxLinhas - minLinhas) * (distance - distanceSlider.min) / rangeDistancia); const espacoEntreLinhas = (distance - eletrodoLargura * 2) / numLinhas; let passoDoRotulo = 1; if (espacoEntreLinhas < 35) passoDoRotulo = 3; else if (espacoEntreLinhas < 50) passoDoRotulo = 2; for (let i = 1; i < numLinhas; i++) { const fracao = i / numLinhas; const x = anodoX + eletrodoLargura + fracao * (catodoX - anodoX - eletrodoLargura * 2); const potencial = voltage * (1 - fracao); const r = Math.floor(239 * (1 - fracao) + 59 * fracao); const g = Math.floor(68 * (1 - fracao) + 130 * fracao); const b = Math.floor(68 * (1 - fracao) + 246 * fracao); ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.8)`; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(x, eletrodoY); ctx.lineTo(x, eletrodoY + eletrodoAltura); ctx.stroke(); if ((i % passoDoRotulo === 0) || i === 1) { ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText(`${potencial.toFixed(1)}V`, x, eletrodoY - 10); } } }
+            function desenharLinhasCampo() { const anodoX = getAnodoX(); const catodoX = getCatodoX(); const eletrodoY = (height - eletrodoAltura) / 2; const numLinhas = 12; ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); for (let i = 0; i < numLinhas; i++) { const y = eletrodoY + (i + 0.5) * (eletrodoAltura / numLinhas); ctx.beginPath(); ctx.moveTo(anodoX + eletrodoLargura, y); ctx.lineTo(catodoX - eletrodoLargura, y); ctx.stroke(); const numSetas = 5; for (let j = 1; j <= numSetas; j++) { const xSeta = anodoX + eletrodoLargura + j * (catodoX - anodoX - eletrodoLargura * 2) / (numSetas + 1); ctx.beginPath(); ctx.moveTo(xSeta, y); ctx.lineTo(xSeta - 5, y - 3); ctx.moveTo(xSeta, y); ctx.lineTo(xSeta - 5, y + 3); ctx.stroke(); } } ctx.setLineDash([]); }
+            function desenharSolucao() { const anodoX = getAnodoX(); const catodoX = getCatodoX(); const eletrodoY = (height - eletrodoAltura) / 2; const gradient = ctx.createLinearGradient(anodoX, 0, catodoX, 0); gradient.addColorStop(0, 'rgba(239, 68, 68, 0.1)'); gradient.addColorStop(0.5, 'rgba(147, 51, 234, 0.1)'); gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)'); ctx.fillStyle = gradient; ctx.fillRect(anodoX + eletrodoLargura, eletrodoY, catodoX - anodoX - eletrodoLargura * 2, eletrodoAltura); ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)'; ctx.lineWidth = 2; ctx.strokeRect(anodoX + eletrodoLargura, eletrodoY, catodoX - anodoX - eletrodoLargura * 2, eletrodoAltura); }
+            function desenharDipolo() { const carga1X = width / 2 - distance / 2; const carga2X = width / 2 + distance / 2; const cargaY = height / 2; const cargaRaio = 25; desenharEquipotenciaisDipolo(carga1X, carga2X, cargaY); if (showFieldLines) { desenharLinhasCampoDipolo(carga1X, carga2X, cargaY); } ctx.beginPath(); ctx.arc(carga1X, cargaY, cargaRaio, 0, 2 * Math.PI); ctx.fillStyle = '#ef4444'; ctx.fill(); ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = 'white'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(carga1X - 10, cargaY); ctx.lineTo(carga1X + 10, cargaY); ctx.moveTo(carga1X, cargaY - 10); ctx.lineTo(carga1X, cargaY + 10); ctx.stroke(); ctx.beginPath(); ctx.arc(carga2X, cargaY, cargaRaio, 0, 2 * Math.PI); ctx.fillStyle = '#3b82f6'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = 'white'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(carga2X - 10, cargaY); ctx.lineTo(carga2X + 10, cargaY); ctx.stroke(); ctx.fillStyle = 'white'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`+${voltage.toFixed(0)}Q`, carga1X, cargaY + cargaRaio + 30); ctx.fillText(`-${voltage.toFixed(0)}Q`, carga2X, cargaY + cargaRaio + 30); }
+            function desenharEquipotenciaisDipolo(x1, x2, y) { const minLinhas = 8; const maxLinhas = 18; const rangeDistancia = distanceSlider.max - distanceSlider.min; const numLinhas = Math.floor(minLinhas + (maxLinhas - minLinhas) * (distance - distanceSlider.min) / rangeDistancia); for (let nivel = 1; nivel <= numLinhas; nivel++) { const pontos = []; const resolucao = 200; for (let i = 0; i < resolucao; i++) { const angulo = (i / resolucao) * Math.PI * 2; for (let raio = 30; raio < 400; raio += 2) { const px = width / 2 + raio * Math.cos(angulo); const py = height / 2 + raio * Math.sin(angulo); const d1 = Math.sqrt((px - x1) ** 2 + (py - y) ** 2); const d2 = Math.sqrt((px - x2) ** 2 + (py - y) ** 2); if (d1 < 25 || d2 < 25) continue; const potencial = voltage * (1 / d1 - 1 / d2); const potencialAlvo = (nivel - numLinhas / 2) * 0.02; if (Math.abs(potencial - potencialAlvo) < 0.005) { pontos.push({ x: px, y: py }); break; } } } if (pontos.length > 10) { const fracao = Math.abs(nivel - numLinhas / 2) / (numLinhas / 2); const r = Math.floor(239 * (1 - fracao) + 59 * fracao); const g = Math.floor(68 * (1 - fracao) + 130 * fracao); const b = Math.floor(68 * (1 - fracao) + 246 * fracao); ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.7)`; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(pontos[0].x, pontos[0].y); for (let i = 1; i < pontos.length; i++) { ctx.lineTo(pontos[i].x, pontos[i].y); } ctx.stroke(); } } }
+            function desenharLinhasCampoDipolo(x1, x2, y) { const numLinhas = 16; for (let i = 0; i < numLinhas; i++) { const angulo = (i / numLinhas) * Math.PI * 2; const pontos = []; let px = x1 + 30 * Math.cos(angulo); let py = y + 30 * Math.sin(angulo); for (let step = 0; step < 100; step++) { pontos.push({ x: px, y: py }); const d1 = Math.sqrt((px - x1) ** 2 + (py - y) ** 2); const d2 = Math.sqrt((px - x2) ** 2 + (py - y) ** 2); if (d2 < 30 || px < 0 || px > width || py < 0 || py > height) break; const Ex = voltage * ((px - x1) / d1 ** 3 - (px - x2) / d2 ** 3); const Ey = voltage * ((py - y) / d1 ** 3 - (py - y) / d2 ** 3); const magnitude = Math.sqrt(Ex ** 2 + Ey ** 2); if (magnitude > 0) { px += (Ex / magnitude) * 3; py += (Ey / magnitude) * 3; } } if (pontos.length > 2) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1.5; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(pontos[0].x, pontos[0].y); for (let j = 1; j < pontos.length; j++) { ctx.lineTo(pontos[j].x, pontos[j].y); } ctx.stroke(); if (pontos.length > 5) { const idx = Math.floor(pontos.length / 2); const p1 = pontos[idx - 1]; const p2 = pontos[idx]; const angulo = Math.atan2(p2.y - p1.y, p2.x - p1.x); ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p2.x - 8 * Math.cos(angulo - 0.3), p2.y - 8 * Math.sin(angulo - 0.3)); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p2.x - 8 * Math.cos(angulo + 0.3), p2.y - 8 * Math.sin(angulo + 0.3)); ctx.stroke(); } } } }
+            function animar() { if (SimManager.activeSim !== 'equipotenciais') return; ctx.fillStyle = 'rgb(15, 23, 42)'; ctx.fillRect(0, 0, width, height); if (modo === 'cuba') { desenharSolucao(); desenharEquipotenciais(); if (showFieldLines) { desenharLinhasCampo(); } desenharEletrodos(); } else { desenharDipolo(); } SimManager.equipotenciais.animationId = requestAnimationFrame(animar); }
+            function atualizarValores() { voltage = parseFloat(voltageSlider.value); distance = parseInt(distanceSlider.value); voltageDisplay.textContent = modo === 'cuba' ? `${voltage.toFixed(1)} V` : `${voltage.toFixed(1)} Q`; distanceDisplay.textContent = `${distance} px`; }
+            modoCuba.addEventListener('click', () => { modo = 'cuba'; titulo.textContent = 'Cuba Eletrolítica'; label1.textContent = 'Tensão (Voltagem)'; label2.textContent = 'Distância entre Eletrodos'; modoCuba.classList.add('bg-blue-500', 'text-white'); modoCuba.classList.remove('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600'); modoDipolo.classList.remove('bg-blue-500', 'text-white'); modoDipolo.classList.add('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600'); currentFlowcharts = flowchartsCuba; currentExplanationIndex = 0; renderFlowcharts(); clearInterval(SimManager.equipotenciais.intervalId); speak("Agora estamos no modo Cuba Eletrolítica."); SimManager.equipotenciais.intervalId = setInterval(highlightAndSpeak, 12000); atualizarValores(); });
+            modoDipolo.addEventListener('click', () => { modo = 'dipolo'; titulo.textContent = 'Dipolo Elétrico'; label1.textContent = 'Magnitude da Carga'; label2.textContent = 'Distância entre Cargas'; modoDipolo.classList.add('bg-blue-500', 'text-white'); modoDipolo.classList.remove('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600'); modoCuba.classList.remove('bg-blue-500', 'text-white'); modoCuba.classList.add('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600'); currentFlowcharts = flowchartsDipolo; currentExplanationIndex = 0; renderFlowcharts(); clearInterval(SimManager.equipotenciais.intervalId); speak("Mudamos para o modo Dipolo Elétrico."); SimManager.equipotenciais.intervalId = setInterval(highlightAndSpeak, 12000); atualizarValores(); });
+            voltageSlider.addEventListener('input', atualizarValores);
+            distanceSlider.addEventListener('input', atualizarValores);
+            toggleFieldBtn.addEventListener('click', () => { showFieldLines = !showFieldLines; toggleFieldBtn.textContent = showFieldLines ? 'Ocultar Linhas de Campo' : 'Mostrar Linhas de Campo'; toggleFieldBtn.classList.toggle('bg-blue-500/40'); });
+            SimManager.equipotenciais.start = () => { if (SimManager.equipotenciais.animationId) return; renderFlowcharts(); atualizarValores(); animar(); setTimeout(() => { highlightAndSpeak(); SimManager.equipotenciais.intervalId = setInterval(highlightAndSpeak, 12000); }, 1000); };
+            SimManager.equipotenciais.initialized = true;
+        }
+
+        // --- INICIALIZAÇÃO DA SIMULAÇÃO 3: CAMPO MAGNÉTICO (NOVO CÓDIGO) ---
+        function initMagneticoSim() {
+            const canvas = document.getElementById('magnetico-canvas');
+            const ctx = canvas.getContext('2d');
+            let mode = 'magnet'; let strength = 5; let distance = 150; let showFieldLines = true;
+            let showCompass = false; let showFilings = false; let voiceEnabled = true;
+            let currentStep = 0; let isSpeaking = false;
+            const compassNeedles = []; const ironFilings = [];
+            for (let x = 50; x < canvas.width; x += 60) { for (let y = 50; y < canvas.height; y += 60) { compassNeedles.push({ x, y, angle: 0 }); } }
+            for (let i = 0; i < 200; i++) { ironFilings.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, angle: 0, length: 8 + Math.random() * 8 }); }
+            const flowcharts = { magnet: [ { title: "1. O que é um Campo Magnético?", content: "Um campo magnético é uma região do espaço onde forças magnéticas atuam sobre materiais ferromagnéticos e cargas em movimento. Todo ímã possui dois polos: Norte (N) e Sul (S).", equation: "B = μ₀/(4π) · 2m/r³", speech: "Campo magnético é a região onde forças magnéticas atuam. Todo ímã tem polo norte e polo sul." }, { title: "2. Linhas de Campo Magnético", content: "As linhas de campo magnético SAEM do polo Norte e ENTRAM no polo Sul. Elas nunca se cruzam e são sempre fechadas (continuam dentro do ímã de S para N).", equation: "∇ · B = 0 (Lei de Gauss)", speech: "As linhas de campo saem do polo norte e entram no polo sul. Elas nunca se cruzam." }, { title: "3. Intensidade do Campo", content: "A intensidade do campo magnético (B) diminui com o cubo da distância. Quanto mais próximo do ímã, mais forte é o campo. A unidade é o Tesla (T).", equation: "B ∝ 1/r³", speech: "A intensidade do campo diminui rapidamente com a distância. Medimos em Tesla." }, { title: "4. Propriedades dos Ímãs", content: "Polos iguais se repelem, polos opostos se atraem. Se quebrarmos um ímã, cada pedaço terá seus próprios polos N e S. Não existem monopolos magnéticos isolados.", equation: "F = (μ₀/4π) · (m₁m₂)/r²", speech: "Polos iguais se repelem, opostos se atraem. Não existem polos magnéticos isolados." }, { title: "5. Aplicações Práticas", content: "Campos magnéticos são usados em motores elétricos, geradores, alto-falantes, discos rígidos, ressonância magnética (MRI) e bússolas para navegação.", equation: "Φ = B · A · cos(θ)", speech: "Campos magnéticos são usados em motores, geradores, alto-falantes e ressonância magnética." } ], wire: [ { title: "1. Campo Magnético de um Fio", content: "Uma corrente elétrica em um fio condutor gera um campo magnético circular ao seu redor. A direção é dada pela regra da mão direita.", equation: "B = μ₀I/(2πr)", speech: "Corrente elétrica em um fio cria campo magnético circular ao redor dele." }, { title: "2. Lei de Biot-Savart", content: "A Lei de Biot-Savart descreve o campo magnético gerado por uma corrente. O campo é proporcional à corrente e inversamente proporcional à distância.", equation: "dB = (μ₀/4π) · (I·dl×r̂)/r²", speech: "A lei de Biot-Savart calcula o campo magnético gerado por corrente elétrica." }, { title: "3. Regra da Mão Direita", content: "Aponte o polegar na direção da corrente. Os dedos curvados indicam a direção do campo magnético circular. As linhas formam círculos concêntricos.", equation: "∇ × B = μ₀J (Lei de Ampère)", speech: "Use a regra da mão direita: polegar na corrente, dedos mostram o campo circular." }, { title: "4. Permeabilidade Magnética", content: "μ₀ é a permeabilidade magnética do vácuo (4π × 10⁻⁷ T·m/A). Em materiais, usamos μ = μᵣμ₀, onde μᵣ é a permeabilidade relativa.", equation: "μ₀ = 4π × 10⁻⁷ T·m/A", speech: "A permeabilidade magnética determina como o material responde ao campo magnético." }, { title: "5. Aplicações de Eletromagnetismo", content: "Eletroímãs, transformadores, indutores, bobinas, solenoides e motores elétricos usam o princípio do campo magnético gerado por corrente.", equation: "L = μ₀n²A·l (Indutância)", speech: "Eletroímãs, transformadores e motores usam campos magnéticos de correntes elétricas." } ] };
+            function setMode(newMode) { mode = newMode; currentStep = 0; document.querySelectorAll('#magnetico-container .mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`magnetico-mode-${newMode}`).classList.add('active'); updateFlowchart(); speakCurrentStep(); }
+            function toggleFieldLines() { showFieldLines = !showFieldLines; const btn = document.getElementById('magnetico-fieldLinesBtn'); btn.textContent = `Linhas de Campo: ${showFieldLines ? 'ON' : 'OFF'}`; btn.classList.toggle('active', showFieldLines); }
+            function toggleCompass() { showCompass = !showCompass; const btn = document.getElementById('magnetico-compassBtn'); btn.textContent = `Bússolas: ${showCompass ? 'ON' : 'OFF'}`; btn.classList.toggle('active', showCompass); }
+            function toggleFilings() { showFilings = !showFilings; const btn = document.getElementById('magnetico-filingsBtn'); btn.textContent = `Limalha: ${showFilings ? 'ON' : 'OFF'}`; btn.classList.toggle('active', showFilings); }
+            function toggleVoice() { voiceEnabled = !voiceEnabled; document.getElementById('magnetico-voiceToggle').textContent = `🔊 Voz: ${voiceEnabled ? 'ON' : 'OFF'}`; if (!voiceEnabled) { speechSynthesis.cancel(); isSpeaking = false; } }
+            function updateFlowchart() { const container = document.getElementById('magnetico-flowchartSteps'); const steps = flowcharts[mode]; container.innerHTML = steps.map((step, index) => `<div class="step ${index === currentStep ? 'active' : ''}" onclick="SimManager.magnetico.goToStep(${index})"><h4>${step.title}</h4><p>${step.content}</p><div class="equation">${step.equation}</div></div>`).join(''); }
+            SimManager.magnetico.goToStep = (index) => { currentStep = index; updateFlowchart(); speakCurrentStep(); };
+            function nextStep() { const steps = flowcharts[mode]; currentStep = (currentStep + 1) % steps.length; updateFlowchart(); speakCurrentStep(); }
+            function previousStep() { const steps = flowcharts[mode]; currentStep = (currentStep - 1 + steps.length) % steps.length; updateFlowchart(); speakCurrentStep(); }
+            function speakCurrentStep() { if (!voiceEnabled || SimManager.activeSim !== 'magnetico') return; speechSynthesis.cancel(); const step = flowcharts[mode][currentStep]; const utterance = new SpeechSynthesisUtterance(step.speech); utterance.lang = 'pt-BR'; utterance.rate = 0.9; utterance.pitch = 1; utterance.onstart = () => { isSpeaking = true; }; utterance.onend = () => { isSpeaking = false; }; speechSynthesis.speak(utterance); }
+            function getMagneticField(x, y) { const centerX = canvas.width / 2; const centerY = canvas.height / 2; if (mode === 'magnet') { const northX = centerX - distance; const northY = centerY; const southX = centerX + distance; const southY = centerY; const dnx = x - northX; const dny = y - northY; const dn = Math.sqrt(dnx * dnx + dny * dny) + 0.1; const dsx = x - southX; const dsy = y - southY; const ds = Math.sqrt(dsx * dsx + dsy * dsy) + 0.1; const scale = strength * 1000; const Bx = scale * (dnx / Math.pow(dn, 3) - dsx / Math.pow(ds, 3)); const By = scale * (dny / Math.pow(dn, 3) - dsy / Math.pow(ds, 3)); return { Bx, By }; } else { const dx = x - centerX; const dy = y - centerY; const r = Math.sqrt(dx * dx + dy * dy) + 0.1; const scale = strength * 500; const Bx = -scale * dy / (r * r); const By = scale * dx / (r * r); return { Bx, By }; } }
+            function drawFieldLines() { if (!showFieldLines) return; const centerX = canvas.width / 2; const centerY = canvas.height / 2; if (mode === 'magnet') { const northX = centerX - distance; const northY = centerY; for (let angle = 0; angle < 360; angle += 20) { const rad = angle * Math.PI / 180; let x = northX + Math.cos(rad) * 30; let y = northY + Math.sin(rad) * 30; ctx.beginPath(); ctx.moveTo(x, y); for (let i = 0; i < 100; i++) { const field = getMagneticField(x, y); const mag = Math.sqrt(field.Bx * field.Bx + field.By * field.By); if (mag < 0.1) break; const step = 3; x += (field.Bx / mag) * step; y += (field.By / mag) * step; if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break; ctx.lineTo(x, y); } ctx.strokeStyle = `hsl(${220 + angle}, 70%, 50%)`; ctx.lineWidth = 2; ctx.stroke(); } } else { for (let r = 40; r < 300; r += 30) { ctx.beginPath(); ctx.arc(centerX, centerY, r, 0, Math.PI * 2); ctx.strokeStyle = `hsl(${280 - r / 2}, 70%, 50%)`; ctx.lineWidth = 2; ctx.stroke(); const arrowAngle = Math.PI / 4; const arrowX = centerX + r * Math.cos(arrowAngle); const arrowY = centerY + r * Math.sin(arrowAngle); drawArrow(arrowX, arrowY, arrowAngle + Math.PI / 2); } } }
+            function drawArrow(x, y, angle) { ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-5, -8); ctx.lineTo(5, -8); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore(); }
+            function drawCompass() { if (!showCompass) return; compassNeedles.forEach(needle => { const field = getMagneticField(needle.x, needle.y); const targetAngle = Math.atan2(field.By, field.Bx); needle.angle = targetAngle; ctx.save(); ctx.translate(needle.x, needle.y); ctx.rotate(needle.angle); ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(15, 0); ctx.strokeStyle = '#f44336'; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(10, -4); ctx.lineTo(10, 4); ctx.closePath(); ctx.fillStyle = '#f44336'; ctx.fill(); ctx.restore(); }); }
+            function drawFilings() { if (!showFilings) return; ironFilings.forEach(filing => { const field = getMagneticField(filing.x, filing.y); filing.angle = Math.atan2(field.By, field.Bx); ctx.save(); ctx.translate(filing.x, filing.y); ctx.rotate(filing.angle); ctx.beginPath(); ctx.moveTo(-filing.length / 2, 0); ctx.lineTo(filing.length / 2, 0); ctx.strokeStyle = 'rgba(50, 50, 50, 0.6)'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore(); }); }
+            function drawMagnet() { const centerX = canvas.width / 2; const centerY = canvas.height / 2; if (mode === 'magnet') { const northX = centerX - distance; const southX = centerX + distance; const poleWidth = 60; const poleHeight = 100; ctx.fillStyle = '#f44336'; ctx.fillRect(northX - poleWidth / 2, centerY - poleHeight / 2, poleWidth, poleHeight); ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.strokeRect(northX - poleWidth / 2, centerY - poleHeight / 2, poleWidth, poleHeight); ctx.fillStyle = '#fff'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('N', northX, centerY); ctx.fillStyle = '#2196F3'; ctx.fillRect(southX - poleWidth / 2, centerY - poleHeight / 2, poleWidth, poleHeight); ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.strokeRect(southX - poleWidth / 2, centerY - poleHeight / 2, poleWidth, poleHeight); ctx.fillStyle = '#fff'; ctx.fillText('S', southX, centerY); } else { ctx.beginPath(); ctx.arc(centerX, centerY, 20, 0, Math.PI * 2); ctx.fillStyle = '#ff9800'; ctx.fill(); ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.arc(centerX, centerY, 6, 0, Math.PI * 2); ctx.fillStyle = '#333'; ctx.fill(); ctx.fillStyle = '#333'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.fillText('I', centerX, centerY - 35); } }
+            function animate() { if (SimManager.activeSim !== 'magnetico') return; ctx.clearRect(0, 0, canvas.width, canvas.height); drawFieldLines(); drawFilings(); drawCompass(); drawMagnet(); const mouth = document.getElementById('magnetico-avatarMouth'); if (isSpeaking) { mouth.classList.add('talking'); } else { mouth.classList.remove('talking'); } SimManager.magnetico.animationId = requestAnimationFrame(animate); }
+            document.getElementById('magnetico-strength').addEventListener('input', (e) => { strength = parseFloat(e.target.value); document.getElementById('magnetico-strengthValue').textContent = strength; });
+            document.getElementById('magnetico-distance').addEventListener('input', (e) => { distance = parseInt(e.target.value); document.getElementById('magnetico-distanceValue').textContent = distance; });
+            document.getElementById('magnetico-mode-magnet').addEventListener('click', () => setMode('magnet'));
+            document.getElementById('magnetico-mode-wire').addEventListener('click', () => setMode('wire'));
+            document.getElementById('magnetico-fieldLinesBtn').addEventListener('click', toggleFieldLines);
+            document.getElementById('magnetico-compassBtn').addEventListener('click', toggleCompass);
+            document.getElementById('magnetico-filingsBtn').addEventListener('click', toggleFilings);
+            document.getElementById('magnetico-voiceToggle').addEventListener('click', toggleVoice);
+            document.getElementById('magnetico-repeat').addEventListener('click', speakCurrentStep);
+            document.getElementById('magnetico-prevStep').addEventListener('click', previousStep);
+            document.getElementById('magnetico-nextStep').addEventListener('click', nextStep);
+            SimManager.magnetico.start = () => { if (SimManager.magnetico.animationId) return; updateFlowchart(); animate(); SimManager.magnetico.intervalId = setInterval(() => { if (!isSpeaking) { nextStep(); } }, 15000); };
+            SimManager.magnetico.initialized = true;
+        }
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.tab-button.active').click();
+        });
+    </script>
+</body>
+</html>
